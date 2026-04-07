@@ -20,29 +20,46 @@ export async function PUT(
 
   try {
     const { id } = await params
-    const { daysAtCurrentLevel } = await req.json()
+    const { daysAtCurrentLevel, activeReferrals } = await req.json()
 
-    if (daysAtCurrentLevel === undefined || daysAtCurrentLevel < 0) {
-      return NextResponse.json({ error: 'Invalid days value' }, { status: 400 })
+    const updateData: any = {}
+    const metadataFields: any = {}
+
+    if (daysAtCurrentLevel !== undefined && daysAtCurrentLevel >= 0) {
+      updateData.daysAtCurrentLevel = parseInt(daysAtCurrentLevel)
+      metadataFields.daysAtCurrentLevel = daysAtCurrentLevel
     }
 
-    // Update user's days at current level
+    if (activeReferrals !== undefined && activeReferrals >= 0) {
+      updateData.activeReferrals = parseInt(activeReferrals)
+      metadataFields.activeReferrals = activeReferrals
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
+    }
+
+    // Update user's stats
     const user = await prisma.user.update({
       where: { id },
-      data: {
-        daysAtCurrentLevel: parseInt(daysAtCurrentLevel),
-      },
+      data: updateData,
     })
+
+    // Build description based on what was updated
+    const changes = Object.keys(metadataFields).map(f => {
+      if (f === 'daysAtCurrentLevel') return `days at level: ${metadataFields[f]}`
+      if (f === 'activeReferrals') return `active referrals: ${metadataFields[f]}`
+      return f
+    }).join(', ')
 
     // Log the change in history
     await prisma.history.create({
       data: {
         userId: id,
         type: 'ADMIN_UPDATE',
-        description: `Admin updated days at current level to ${daysAtCurrentLevel}`,
+        description: `Admin updated ${changes}`,
         metadata: {
-          field: 'daysAtCurrentLevel',
-          newValue: daysAtCurrentLevel,
+          ...metadataFields,
           updatedBy: payload.username,
           updatedAt: new Date().toISOString(),
         }

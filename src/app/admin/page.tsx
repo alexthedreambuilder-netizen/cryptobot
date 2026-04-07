@@ -43,6 +43,8 @@ export default function Admin() {
   const [viewMode, setViewMode] = useState<'list' | 'details'>('list')
   const [editingDays, setEditingDays] = useState(false)
   const [newDaysValue, setNewDaysValue] = useState('')
+  const [editingReferrals, setEditingReferrals] = useState(false)
+  const [newReferralsValue, setNewReferralsValue] = useState('')
   const router = useRouter()
 
   useEffect(() => {
@@ -125,37 +127,49 @@ export default function Admin() {
     fetchUserHistory(user.id)
     setViewMode('details')
     setEditingDays(false)
+    setEditingReferrals(false)
     setNewDaysValue(user.daysAtCurrentLevel.toString())
+    setNewReferralsValue(user.activeReferrals.toString())
   }
 
-  const updateDaysAtCurrentLevel = async () => {
+  const updateUserStats = async (field: 'daysAtCurrentLevel' | 'activeReferrals') => {
     if (!selectedUser) return
     
     const token = localStorage.getItem('token')
     if (!token) return
 
     try {
+      const body: any = {}
+      if (field === 'daysAtCurrentLevel') {
+        body.daysAtCurrentLevel = parseInt(newDaysValue) || 0
+      } else {
+        body.activeReferrals = parseInt(newReferralsValue) || 0
+      }
+
       const res = await fetch(`/api/admin/users/${selectedUser.id}/stats`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          daysAtCurrentLevel: parseInt(newDaysValue) || 0,
-        }),
+        body: JSON.stringify(body),
       })
 
       if (!res.ok) throw new Error('Failed to update')
       
-      const updatedUser = { ...selectedUser, daysAtCurrentLevel: parseInt(newDaysValue) || 0 }
+      const updatedUser = { 
+        ...selectedUser, 
+        [field]: parseInt(field === 'daysAtCurrentLevel' ? newDaysValue : newReferralsValue) || 0 
+      }
       setSelectedUser(updatedUser)
-      setEditingDays(false)
+      
+      if (field === 'daysAtCurrentLevel') setEditingDays(false)
+      else setEditingReferrals(false)
       
       // Refresh user list
       fetchUsers(token)
     } catch (err) {
-      alert('Failed to update days at current level')
+      alert(`Failed to update ${field === 'daysAtCurrentLevel' ? 'days at level' : 'active referrals'}`)
     }
   }
 
@@ -321,7 +335,7 @@ export default function Admin() {
                         min="0"
                       />
                       <button 
-                        onClick={updateDaysAtCurrentLevel}
+                        onClick={() => updateUserStats('daysAtCurrentLevel')}
                         className="text-xs px-2 py-1 rounded bg-green-500/20 text-green-400 hover:bg-green-500/30 transition"
                       >
                         Save
@@ -346,7 +360,44 @@ export default function Admin() {
               <div className="p-4 rounded-xl bg-white/5 border border-white/10">
                 <div className="text-sm text-gray-400">Referrals</div>
                 <div className="text-xl font-bold">{selectedUser.activeReferrals} active</div>
-                <div className="text-xs text-gray-500">Total: {selectedUser.totalReferrals}</div>
+                <div className="mt-2">
+                  {!editingReferrals ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500">Total: {selectedUser.totalReferrals}</span>
+                      <button 
+                        onClick={() => setEditingReferrals(true)}
+                        className="text-xs px-2 py-1 rounded bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition"
+                      >
+                        Edit Active
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 mt-1">
+                      <input
+                        type="number"
+                        value={newReferralsValue}
+                        onChange={(e) => setNewReferralsValue(e.target.value)}
+                        className="w-20 px-2 py-1 rounded bg-gray-900/50 border border-gray-600 text-white text-sm"
+                        min="0"
+                      />
+                      <button 
+                        onClick={() => updateUserStats('activeReferrals')}
+                        className="text-xs px-2 py-1 rounded bg-green-500/20 text-green-400 hover:bg-green-500/30 transition"
+                      >
+                        Save
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setEditingReferrals(false)
+                          setNewReferralsValue(selectedUser.activeReferrals.toString())
+                        }}
+                        className="text-xs px-2 py-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="p-4 rounded-xl bg-white/5 border border-white/10">
                 <div className="text-sm text-gray-400">Registered</div>
