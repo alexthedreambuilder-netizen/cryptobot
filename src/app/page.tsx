@@ -138,10 +138,7 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="p-6 text-center text-gray-500 text-sm">
-        Crypto Bambozl&apos;d • Invest with us! • Built with Next.js + PostgreSQL
-      </footer>
+
     </div>
   )
 }

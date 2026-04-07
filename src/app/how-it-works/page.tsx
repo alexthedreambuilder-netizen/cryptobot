@@ -237,11 +237,6 @@ export default function HowItWorks() {
           </Link>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="p-6 text-center text-gray-500 text-sm border-t border-white/10">
-        Crypto Bambozl&apos;d • Invest with us! • Built with Next.js + PostgreSQL
-      </footer>
     </div>
   )
 }
