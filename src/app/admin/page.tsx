@@ -45,6 +45,8 @@ export default function Admin() {
   const [newDaysValue, setNewDaysValue] = useState('')
   const [editingReferrals, setEditingReferrals] = useState(false)
   const [newReferralsValue, setNewReferralsValue] = useState('')
+  const [editingPoints, setEditingPoints] = useState(false)
+  const [newPointsValue, setNewPointsValue] = useState('')
   const router = useRouter()
 
   useEffect(() => {
@@ -128,11 +130,13 @@ export default function Admin() {
     setViewMode('details')
     setEditingDays(false)
     setEditingReferrals(false)
+    setEditingPoints(false)
     setNewDaysValue(user.daysAtCurrentLevel.toString())
     setNewReferralsValue(user.activeReferrals.toString())
+    setNewPointsValue(user.points.toString())
   }
 
-  const updateUserStats = async (field: 'daysAtCurrentLevel' | 'activeReferrals') => {
+  const updateUserStats = async (field: 'daysAtCurrentLevel' | 'activeReferrals' | 'points') => {
     if (!selectedUser) return
     
     const token = localStorage.getItem('token')
@@ -142,8 +146,10 @@ export default function Admin() {
       const body: any = {}
       if (field === 'daysAtCurrentLevel') {
         body.daysAtCurrentLevel = parseInt(newDaysValue) || 0
-      } else {
+      } else if (field === 'activeReferrals') {
         body.activeReferrals = parseInt(newReferralsValue) || 0
+      } else if (field === 'points') {
+        body.points = parseInt(newPointsValue) || 0
       }
 
       const res = await fetch(`/api/admin/users/${selectedUser.id}/stats`, {
@@ -157,19 +163,26 @@ export default function Admin() {
 
       if (!res.ok) throw new Error('Failed to update')
       
+      let newValue = 0
+      if (field === 'daysAtCurrentLevel') newValue = parseInt(newDaysValue) || 0
+      else if (field === 'activeReferrals') newValue = parseInt(newReferralsValue) || 0
+      else if (field === 'points') newValue = parseInt(newPointsValue) || 0
+      
       const updatedUser = { 
         ...selectedUser, 
-        [field]: parseInt(field === 'daysAtCurrentLevel' ? newDaysValue : newReferralsValue) || 0 
+        [field]: newValue
       }
       setSelectedUser(updatedUser)
       
       if (field === 'daysAtCurrentLevel') setEditingDays(false)
-      else setEditingReferrals(false)
+      else if (field === 'activeReferrals') setEditingReferrals(false)
+      else if (field === 'points') setEditingPoints(false)
       
       // Refresh user list
       fetchUsers(token)
     } catch (err) {
-      alert(`Failed to update ${field === 'daysAtCurrentLevel' ? 'days at level' : 'active referrals'}`)
+      const fieldName = field === 'daysAtCurrentLevel' ? 'days at level' : field === 'activeReferrals' ? 'active referrals' : 'points'
+      alert(`Failed to update ${fieldName}`)
     }
   }
 
@@ -355,7 +368,44 @@ export default function Admin() {
               </div>
               <div className="p-4 rounded-xl bg-white/5 border border-white/10">
                 <div className="text-sm text-gray-400">Balance</div>
-                <div className="text-xl font-bold text-green-400">${selectedUser.points.toLocaleString()}</div>
+                <div className="mt-2">
+                  {!editingPoints ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl font-bold text-green-400">${selectedUser.points.toLocaleString()}</span>
+                      <button 
+                        onClick={() => setEditingPoints(true)}
+                        className="text-xs px-2 py-1 rounded bg-green-500/20 text-green-400 hover:bg-green-500/30 transition"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 mt-1">
+                      <input
+                        type="number"
+                        value={newPointsValue}
+                        onChange={(e) => setNewPointsValue(e.target.value)}
+                        className="w-24 px-2 py-1 rounded bg-gray-900/50 border border-gray-600 text-white text-sm"
+                        min="0"
+                      />
+                      <button 
+                        onClick={() => updateUserStats('points')}
+                        className="text-xs px-2 py-1 rounded bg-green-500/20 text-green-400 hover:bg-green-500/30 transition"
+                      >
+                        Save
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setEditingPoints(false)
+                          setNewPointsValue(selectedUser.points.toString())
+                        }}
+                        className="text-xs px-2 py-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="p-4 rounded-xl bg-white/5 border border-white/10">
                 <div className="text-sm text-gray-400">Referrals</div>

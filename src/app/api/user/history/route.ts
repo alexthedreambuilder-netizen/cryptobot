@@ -10,7 +10,13 @@ export async function GET(req: NextRequest) {
 
   try {
     const history = await prisma.history.findMany({
-      where: { userId: auth.user.userId },
+      where: { 
+        userId: auth.user.userId,
+        // Exclude admin update actions - only show WITHDRAWAL and DEPOSIT_APPROVED
+        type: {
+          not: 'ADMIN_UPDATE'
+        }
+      },
       orderBy: { createdAt: 'desc' },
       take: 50,
     })

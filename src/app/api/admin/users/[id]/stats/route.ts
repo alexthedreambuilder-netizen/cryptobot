@@ -20,7 +20,7 @@ export async function PUT(
 
   try {
     const { id } = await params
-    const { daysAtCurrentLevel, activeReferrals } = await req.json()
+    const { daysAtCurrentLevel, activeReferrals, points } = await req.json()
 
     const updateData: any = {}
     const metadataFields: any = {}
@@ -29,7 +29,6 @@ export async function PUT(
       const days = parseInt(daysAtCurrentLevel)
       updateData.daysAtCurrentLevel = days
       // Recalculează lastLevelUpDate bazat pe zilele dorite
-      // Ex: dacă vrem 3 zile, setăm lastLevelUpDate la (acum - 3 zile)
       updateData.lastLevelUpDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
       metadataFields.daysAtCurrentLevel = days
     }
@@ -37,6 +36,11 @@ export async function PUT(
     if (activeReferrals !== undefined && activeReferrals >= 0) {
       updateData.activeReferrals = parseInt(activeReferrals)
       metadataFields.activeReferrals = activeReferrals
+    }
+
+    if (points !== undefined && points >= 0) {
+      updateData.points = parseInt(points)
+      metadataFields.points = points
     }
 
     if (Object.keys(updateData).length === 0) {
@@ -49,26 +53,8 @@ export async function PUT(
       data: updateData,
     })
 
-    // Build description based on what was updated
-    const changes = Object.keys(metadataFields).map(f => {
-      if (f === 'daysAtCurrentLevel') return `days at level: ${metadataFields[f]}`
-      if (f === 'activeReferrals') return `active referrals: ${metadataFields[f]}`
-      return f
-    }).join(', ')
-
-    // Log the change in history
-    await prisma.history.create({
-      data: {
-        userId: id,
-        type: 'ADMIN_UPDATE',
-        description: `Admin updated ${changes}`,
-        metadata: {
-          ...metadataFields,
-          updatedBy: payload.username,
-          updatedAt: new Date().toISOString(),
-        }
-      }
-    })
+    // DO NOT log admin updates to user history - they should be invisible to users
+    // Only WITHDRAWAL and DEPOSIT_APPROVED should appear in user history
 
     return NextResponse.json({ success: true, user })
   } catch (error) {
