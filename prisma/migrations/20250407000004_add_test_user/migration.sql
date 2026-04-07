@@ -1,0 +1,43 @@
+-- Add test user with known referral ID
+INSERT INTO "User" (
+    "id", 
+    "username", 
+    "password", 
+    "uniqueId", 
+    "points", 
+    "level", 
+    "activeReferrals", 
+    "firstName",
+    "lastName",
+    "btcWallet",
+    "ethWallet",
+    "patienceBonus", 
+    "lastPointsChange", 
+    "lastLevelUpDate", 
+    "daysAtCurrentLevel", 
+    "streakDays", 
+    "isAdmin", 
+    "createdAt", 
+    "updatedAt"
+) VALUES (
+    gen_random_uuid(),
+    'testuser',
+    '$2b$10$7OkAxHkcgjnXb2au6g6vGut5KrjrL3jtLSJy.jgB2JLtAkWvmMEr2',
+    'TEST-REF-12345',
+    100,
+    1,
+    0,
+    'Test',
+    'User',
+    'bc1qtest123',
+    '0xtest123',
+    0,
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP,
+    0,
+    0,
+    false,
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP
+)
+ON CONFLICT ("username") DO NOTHING;
