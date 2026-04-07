@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth'
+import { calculateLevel, type Level } from '@/lib/level'
 
 export async function POST(req: Request) {
   const authHeader = req.headers.get('authorization')
@@ -31,6 +32,10 @@ export async function POST(req: Request) {
       select: {
         id: true,
         points: true,
+        level: true,
+        activeReferrals: true,
+        daysAtCurrentLevel: true,
+        lastLevelUpDate: true,
         btcWallet: true,
         ethWallet: true,
         usdtErc20Wallet: true,
@@ -76,18 +81,51 @@ export async function POST(req: Request) {
       }
     })
 
-    // Update user points
+    // Calculate new points after withdrawal
+    const newPoints = user.points - amount
+    
+    // Calculate expected level based on new balance (LEVEL DOWN if needed)
+    const expectedLevel = calculateLevel(newPoints, user.activeReferrals, user.daysAtCurrentLevel)
+    
+    // Prepare update data
+    const updateData: any = {
+      points: newPoints,
+      lastPointsChange: new Date(),
+    }
+    
+    // If level decreases, update level and reset days
+    if (expectedLevel < user.level) {
+      updateData.level = expectedLevel
+      updateData.daysAtCurrentLevel = 0
+      updateData.lastLevelUpDate = new Date()
+      
+      // Log level down
+      await prisma.history.create({
+        data: {
+          userId: user.id,
+          type: 'LEVEL_DOWN',
+          description: `Level ${user.level} → ${expectedLevel} (withdrawal)`,
+          pointsChange: 0,
+          newPoints,
+          metadata: { 
+            oldLevel: user.level, 
+            newLevel: expectedLevel,
+            reason: 'withdrawal'
+          },
+        },
+      })
+    }
+    
+    // Update user
     await prisma.user.update({
       where: { id: user.id },
-      data: {
-        points: user.points - amount,
-        lastPointsChange: new Date(),
-      }
+      data: updateData,
     })
 
     return NextResponse.json({ 
       success: true, 
-      message: 'Withdrawal request submitted for admin approval'
+      message: 'Withdrawal request submitted for admin approval',
+      levelDown: expectedLevel < user.level ? { from: user.level, to: expectedLevel } : null,
     })
   } catch (error) {
     console.error('Withdrawal error:', error)
