@@ -89,27 +89,55 @@ export async function GET(req: NextRequest) {
     const referralBonus = calculateReferralBonus(level, user.activeReferrals)
     const totalPercent = calculateTotalPercent(level, user.activeReferrals, patienceBonus)
 
-    // Verifică daily challenge
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const todaysChallenge = await prisma.dailyChallenge.findUnique({
-      where: {
-        userId_date: {
-          userId: user.id,
-          date: today,
-        },
-      },
-    })
-
-    // Calculate account age in hours
+    // Verifică daily challenge - reset la 9:00 AM ora României (EET/EEST = UTC+2/UTC+3)
+    const now = new Date()
+    
+    // Calculează ora curentă în România (UTC+2 sau UTC+3 în funcție de DST)
+    const romaniaOffset = 2 * 60 * 60 * 1000 // UTC+2 (default)
+    const romaniaTime = new Date(now.getTime() + romaniaOffset)
+    
+    // Calculează când e următorul reset (9:00 AM ora României)
+    const resetHour = 9 // 9 AM
+    let hoursUntilReset = resetHour - romaniaTime.getUTCHours()
+    if (hoursUntilReset <= 0) {
+      hoursUntilReset += 24 // Dacă e după 9 AM, așteaptă până mâine la 9 AM
+    }
+    
+    // Verifică dacă challenge-ul de azi e disponibil (după 9 AM)
+    const isAfter9AM = romaniaTime.getUTCHours() >= resetHour
+    
+    // Account age check - 24h de la creare
     const accountAgeHours = Math.floor((Date.now() - user.createdAt.getTime()) / (1000 * 60 * 60))
     const isAccountOldEnough = accountAgeHours >= 24
-
-    const canDoChallenge = isAccountOldEnough && (!todaysChallenge || !todaysChallenge.completed)
+    
+    // Verifică când a făcut ultimul challenge
     const lastChallengeDate = user.lastChallengeDate
-    const hoursSinceLastChallenge = lastChallengeDate 
-      ? Math.floor((Date.now() - lastChallengeDate.getTime()) / (1000 * 60 * 60))
-      : null
+    let canDoChallenge = false
+    let hoursUntilNext = 0
+    
+    if (!isAccountOldEnough) {
+      // Cont nou, așteaptă 24h
+      hoursUntilNext = 24 - accountAgeHours
+    } else if (!lastChallengeDate) {
+      // Niciodată nu a făcut challenge, poate face acum
+      canDoChallenge = isAfter9AM
+      hoursUntilNext = hoursUntilReset
+    } else {
+      // Verifică dacă a făcut challenge azi (după 9 AM)
+      const lastChallengeRomania = new Date(lastChallengeDate.getTime() + romaniaOffset)
+      const today9AM = new Date(romaniaTime)
+      today9AM.setUTCHours(resetHour, 0, 0, 0)
+      
+      if (lastChallengeRomania >= today9AM) {
+        // A făcut deja challenge azi, așteaptă până mâine 9 AM
+        canDoChallenge = false
+        hoursUntilNext = hoursUntilReset
+      } else {
+        // Nu a făcut challenge azi
+        canDoChallenge = isAfter9AM
+        hoursUntilNext = isAfter9AM ? 0 : hoursUntilReset
+      }
+    }
 
     // Progress către next level
     const nextLevel = Math.min(level + 1, 4) as Level
@@ -149,8 +177,9 @@ export async function GET(req: NextRequest) {
       },
       daily: {
         available: canDoChallenge,
-        hoursUntilNext: hoursSinceLastChallenge !== null ? Math.max(0, 24 - hoursSinceLastChallenge) : 0,
-        completedToday: todaysChallenge?.completed || false,
+        hoursUntilNext,
+        resetAt: '09:00', // Ora României
+        completedToday: !canDoChallenge && isAccountOldEnough && lastChallengeDate !== null,
         accountAgeHours,
         unlocksIn: Math.max(0, 24 - accountAgeHours),
       },

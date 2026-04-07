@@ -33,6 +33,7 @@ interface DashboardData {
   daily: {
     available: boolean
     hoursUntilNext: number
+    resetAt: string
     completedToday: boolean
     accountAgeHours: number
     unlocksIn: number
@@ -394,8 +395,9 @@ export default function Dashboard() {
                 Start Challenge
               </Link>
             ) : (
-              <div className="text-sm text-gray-400">
-                Return in {data.daily.hoursUntilNext}h
+              <div className="text-sm text-gray-400 text-right">
+                <div>Next at {data.daily.resetAt}</div>
+                <div>({data.daily.hoursUntilNext}h)</div>
               </div>
             )}
           </div>
