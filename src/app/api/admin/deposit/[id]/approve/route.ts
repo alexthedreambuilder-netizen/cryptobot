@@ -27,7 +27,16 @@ export async function POST(
         id,
         type: 'DEPOSIT_PENDING',
       },
-      include: { user: true },
+      include: { 
+        user: {
+          select: {
+            id: true,
+            username: true,
+            points: true,
+            referrerId: true,
+          }
+        } 
+      },
     })
 
     if (!depositRequest) {
@@ -47,13 +56,66 @@ export async function POST(
     const amount = Math.abs(depositRequest.pointsChange || 0)
 
     // Update user points
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: depositRequest.userId },
       data: {
         points: { increment: amount },
         lastPointsChange: new Date(),
       },
     })
+
+    // Activate referral if this is the user's first deposit and they have a referrer
+    if (depositRequest.user.referrerId) {
+      // Check if this is the first approved deposit
+      const previousDeposits = await prisma.history.count({
+        where: {
+          userId: depositRequest.userId,
+          type: { in: ['DEPOSIT', 'DEPOSIT_APPROVED'] },
+          id: { not: id },
+        },
+      })
+
+      if (previousDeposits === 0) {
+        // First deposit - activate referral
+        const referrer = await prisma.user.findUnique({
+          where: { uniqueId: depositRequest.user.referrerId },
+        })
+
+        if (referrer) {
+          // Increment active referrals
+          await prisma.user.update({
+            where: { id: referrer.id },
+            data: { activeReferrals: { increment: 1 } },
+          })
+
+          // Log referral activation
+          await prisma.history.create({
+            data: {
+              userId: referrer.id,
+              type: 'REFERRAL_ACTIVATED',
+              description: `Referral activated: ${depositRequest.user.username}`,
+              metadata: { referredUserId: depositRequest.userId, bonus: 10 },
+            },
+          })
+
+          // Bonus instant pentru referrer
+          await prisma.user.update({
+            where: { id: referrer.id },
+            data: { points: { increment: 10 } },
+          })
+
+          await prisma.history.create({
+            data: {
+              userId: referrer.id,
+              type: 'POINTS_ADDED',
+              description: 'Referral instant bonus',
+              pointsChange: 10,
+              newPoints: referrer.points + 10,
+            },
+          })
+        }
+      }
+    }
 
     // Update the history entry
     await prisma.history.update({
