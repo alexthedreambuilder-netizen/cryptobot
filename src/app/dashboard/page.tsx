@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import LanguageSelector from '../components/LanguageSelector'
+import UserChat from '../components/UserChat'
 import { useTranslation } from '../i18n/useTranslation'
 
 interface DashboardData {
@@ -444,6 +445,9 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+
+        {/* Support Chat */}
+        <UserChat />
 
         {/* History Link */}
         <div className="flex justify-center">

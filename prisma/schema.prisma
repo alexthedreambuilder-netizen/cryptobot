@@ -41,6 +41,8 @@ model User {
   // Profile
   firstName         String?
   lastName          String?
+  email             String?
+  phone             String?
   btcWallet         String?
   ethWallet         String?
   usdtErc20Wallet   String?
@@ -49,6 +51,11 @@ model User {
   // Relații
   history           History[]
   challenges        DailyChallenge[]
+  chatMessages      ChatMessage[]
+  
+  // Chat
+  chatUnreadCount   Int      @default(0)
+  lastChatMessageAt DateTime?
   
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -152,4 +159,20 @@ model TelegramMessage {
   
   @@index([chatId])
   @@index([createdAt])
+}
+
+// Internal Chat System (Website Chat)
+model ChatMessage {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  text        String
+  fromUser    Boolean  @default(true) // true = user, false = admin
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  
+  @@index([userId])
+  @@index([createdAt])
+  @@index([read])
 }
