@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
           select: { referrals: true },
         },
       },
-    })
+    }) as any
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
@@ -57,7 +57,12 @@ export async function GET(req: NextRequest) {
     const expectedLevel = calculateLevel(user.points, user.activeReferrals, daysAtCurrentLevel)
     let level = user.level as Level
     
-    if (expectedLevel !== user.level) {
+    // Auto level up doar dacă userul NU a fost modificat recent de admin (în ultimele 5 minute)
+    // pentru a permite testarea cu zile setate manual
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
+    const recentlyUpdated = user.updatedAt > fiveMinutesAgo
+    
+    if (expectedLevel !== user.level && !recentlyUpdated) {
       // Update level în DB și resetează contorul de zile
       await prisma.user.update({
         where: { id: user.id },
