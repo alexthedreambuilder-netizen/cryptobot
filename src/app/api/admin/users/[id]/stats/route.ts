@@ -26,8 +26,12 @@ export async function PUT(
     const metadataFields: any = {}
 
     if (daysAtCurrentLevel !== undefined && daysAtCurrentLevel >= 0) {
-      updateData.daysAtCurrentLevel = parseInt(daysAtCurrentLevel)
-      metadataFields.daysAtCurrentLevel = daysAtCurrentLevel
+      const days = parseInt(daysAtCurrentLevel)
+      updateData.daysAtCurrentLevel = days
+      // Recalculează lastLevelUpDate bazat pe zilele dorite
+      // Ex: dacă vrem 3 zile, setăm lastLevelUpDate la (acum - 3 zile)
+      updateData.lastLevelUpDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+      metadataFields.daysAtCurrentLevel = days
     }
 
     if (activeReferrals !== undefined && activeReferrals >= 0) {
