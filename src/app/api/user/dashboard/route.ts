@@ -9,7 +9,8 @@ import {
   calculateTotalPercent,
   getLevelUpBlockReason,
   getDaysRequiredForLevel,
-  LEVELS
+  LEVELS,
+  type Level
 } from '@/lib/level'
 
 export async function GET(req: NextRequest) {
@@ -54,7 +55,7 @@ export async function GET(req: NextRequest) {
 
     // Verifică level actual vs expected
     const expectedLevel = calculateLevel(user.points, user.activeReferrals, daysAtCurrentLevel)
-    let level = user.level
+    let level = user.level as Level
     
     if (expectedLevel !== user.level) {
       // Update level în DB și resetează contorul de zile
@@ -63,7 +64,6 @@ export async function GET(req: NextRequest) {
         data: { 
           level: expectedLevel,
           lastLevelUpDate: new Date(), // Resetez data level up
-          daysAtCurrentLevel: 0, // Resetez contorul
         },
       })
       level = expectedLevel
@@ -103,8 +103,8 @@ export async function GET(req: NextRequest) {
       : null
 
     // Progress către next level
-    const nextLevel = Math.min(level + 1, 4)
-    const daysRequiredForNext = getDaysRequiredForLevel(nextLevel as 0 | 1 | 2 | 3 | 4)
+    const nextLevel = Math.min(level + 1, 4) as Level
+    const daysRequiredForNext = getDaysRequiredForLevel(nextLevel)
     const nextLevelData = nextLevel > level ? {
       level: nextLevel,
       pointsNeeded: getPointsForLevel(nextLevel) - user.points,
@@ -161,12 +161,12 @@ export async function GET(req: NextRequest) {
   }
 }
 
-function getPointsForLevel(level: number): number {
+function getPointsForLevel(level: Level): number {
   const points = [0, 1, 250, 500, 1200]
   return points[level] || 1200
 }
 
-function getReferralsForLevel(level: number): number {
+function getReferralsForLevel(level: Level): number {
   const refs = [0, 0, 2, 4, 6]
   return refs[level] || 6
 }
