@@ -43,6 +43,8 @@ model User {
   lastName          String?
   btcWallet         String?
   ethWallet         String?
+  usdtErc20Wallet   String?
+  usdtTrc20Wallet   String?
   
   // Relații
   history           History[]

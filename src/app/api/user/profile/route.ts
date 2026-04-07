@@ -26,6 +26,8 @@ export async function GET(req: Request) {
         lastName: true,
         btcWallet: true,
         ethWallet: true,
+        usdtErc20Wallet: true,
+        usdtTrc20Wallet: true,
         uniqueId: true,
         points: true,
         level: true,
@@ -57,7 +59,7 @@ export async function PUT(req: Request) {
   }
 
   try {
-    const { firstName, lastName, btcWallet, ethWallet } = await req.json()
+    const { firstName, lastName, btcWallet, ethWallet, usdtErc20Wallet, usdtTrc20Wallet } = await req.json()
 
     const user = await prisma.user.update({
       where: { id: payload.userId },
@@ -66,6 +68,8 @@ export async function PUT(req: Request) {
         lastName: lastName || null,
         btcWallet: btcWallet || null,
         ethWallet: ethWallet || null,
+        usdtErc20Wallet: usdtErc20Wallet || null,
+        usdtTrc20Wallet: usdtTrc20Wallet || null,
       },
       select: {
         id: true,
@@ -74,6 +78,8 @@ export async function PUT(req: Request) {
         lastName: true,
         btcWallet: true,
         ethWallet: true,
+        usdtErc20Wallet: true,
+        usdtTrc20Wallet: true,
         uniqueId: true,
         points: true,
         level: true,

@@ -11,6 +11,8 @@ interface UserProfile {
   lastName: string | null
   btcWallet: string | null
   ethWallet: string | null
+  usdtErc20Wallet: string | null
+  usdtTrc20Wallet: string | null
   uniqueId: string
   points: number
   level: number
@@ -28,6 +30,8 @@ export default function ProfilePage() {
     lastName: '',
     btcWallet: '',
     ethWallet: '',
+    usdtErc20Wallet: '',
+    usdtTrc20Wallet: '',
   })
 
   useEffect(() => {
@@ -63,6 +67,8 @@ export default function ProfilePage() {
         lastName: data.user.lastName || '',
         btcWallet: data.user.btcWallet || '',
         ethWallet: data.user.ethWallet || '',
+        usdtErc20Wallet: data.user.usdtErc20Wallet || '',
+        usdtTrc20Wallet: data.user.usdtTrc20Wallet || '',
       })
     } catch (error) {
       setError('Failed to load profile')
@@ -254,6 +260,43 @@ export default function ProfilePage() {
                 placeholder="Enter your ETH wallet address"
                 className="w-full px-4 py-3 rounded-lg bg-gray-900/50 border border-gray-600 text-white placeholder:text-gray-500 font-mono text-sm focus:border-cyan-400 focus:outline-none"
               />
+            </div>
+
+            {/* USDT Wallets */}
+            <div className="border-t border-gray-700 pt-4">
+              <h4 className="text-sm font-medium text-gray-300 mb-3">Tether (USDT) Wallets</h4>
+              
+              <div className="space-y-3">
+                {/* USDT ERC-20 */}
+                <div className="space-y-2">
+                  <label className="text-gray-400 text-sm flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs font-bold">₮</span>
+                    USDT ERC-20 (Ethereum Network)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.usdtErc20Wallet}
+                    onChange={(e) => setFormData({ ...formData, usdtErc20Wallet: e.target.value })}
+                    placeholder="Enter your USDT ERC-20 address (0x...)"
+                    className="w-full px-4 py-3 rounded-lg bg-gray-900/50 border border-gray-600 text-white placeholder:text-gray-500 font-mono text-sm focus:border-cyan-400 focus:outline-none"
+                  />
+                </div>
+
+                {/* USDT TRC-20 */}
+                <div className="space-y-2">
+                  <label className="text-gray-400 text-sm flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center text-xs font-bold">₮</span>
+                    USDT TRC-20 (Tron Network)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.usdtTrc20Wallet}
+                    onChange={(e) => setFormData({ ...formData, usdtTrc20Wallet: e.target.value })}
+                    placeholder="Enter your USDT TRC-20 address (T...)"
+                    className="w-full px-4 py-3 rounded-lg bg-gray-900/50 border border-gray-600 text-white placeholder:text-gray-500 font-mono text-sm focus:border-cyan-400 focus:outline-none"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Submit Button */}

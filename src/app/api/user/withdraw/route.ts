@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { amount, currency } = await req.json()
+    const { amount, currency, network } = await req.json()
 
     if (!amount || amount <= 0) {
       return NextResponse.json({ error: 'Invalid amount' }, { status: 400 })
@@ -46,7 +46,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Insufficient balance' }, { status: 400 })
     }
 
-    const walletAddress = currency === 'BTC' ? user.btcWallet : user.ethWallet
+    let walletAddress: string | null = null
+    if (currency === 'BTC') walletAddress = user.btcWallet
+    else if (currency === 'ETH') walletAddress = user.ethWallet
+    else if (currency === 'USDT') {
+      walletAddress = network === 'ERC20' ? user.usdtErc20Wallet : user.usdtTrc20Wallet
+    }
     if (!walletAddress) {
       return NextResponse.json({ error: `${currency} wallet not configured` }, { status: 400 })
     }
@@ -56,11 +61,12 @@ export async function POST(req: Request) {
       data: {
         userId: user.id,
         type: 'WITHDRAWAL_REQUEST',
-        description: `Withdrawal request: $${amount} in ${currency} to ${walletAddress}`,
+        description: `Withdrawal request: $${amount} in ${currency}${currency === 'USDT' ? ` (${network})` : ''} to ${walletAddress}`,
         pointsChange: -amount,
         newPoints: user.points - amount,
         metadata: {
           currency,
+          network: currency === 'USDT' ? network : null,
           walletAddress,
           status: 'PENDING',
           requestedAt: new Date().toISOString(),

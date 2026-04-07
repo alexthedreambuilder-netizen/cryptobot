@@ -9,6 +9,8 @@ interface UserProfile {
   username: string
   btcWallet: string | null
   ethWallet: string | null
+  usdtErc20Wallet: string | null
+  usdtTrc20Wallet: string | null
   points: number
 }
 
@@ -18,6 +20,7 @@ export default function WithdrawPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [amount, setAmount] = useState('')
   const [currency, setCurrency] = useState('BTC')
+  const [network, setNetwork] = useState<'ERC20' | 'TRC20'>('ERC20')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
@@ -40,10 +43,12 @@ export default function WithdrawPage() {
       const data = await res.json()
       setProfile(data.user)
       // Set default currency based on available wallet
-      if (data.user.btcWallet && !data.user.ethWallet) {
+      if (data.user.btcWallet) {
         setCurrency('BTC')
-      } else if (!data.user.btcWallet && data.user.ethWallet) {
+      } else if (data.user.ethWallet) {
         setCurrency('ETH')
+      } else if (data.user.usdtErc20Wallet || data.user.usdtTrc20Wallet) {
+        setCurrency('USDT')
       }
     } catch (error) {
       router.push('/login')
@@ -77,6 +82,16 @@ export default function WithdrawPage() {
       setError('Please add your ETH wallet address in Profile Settings first')
       return
     }
+    if (currency === 'USDT') {
+      if (network === 'ERC20' && !profile.usdtErc20Wallet) {
+        setError('Please add your USDT ERC-20 wallet address in Profile Settings first')
+        return
+      }
+      if (network === 'TRC20' && !profile.usdtTrc20Wallet) {
+        setError('Please add your USDT TRC-20 wallet address in Profile Settings first')
+        return
+      }
+    }
 
     // Check balance
     if (withdrawAmount > profile.points) {
@@ -95,6 +110,7 @@ export default function WithdrawPage() {
         body: JSON.stringify({
           amount: withdrawAmount,
           currency,
+          network: currency === 'USDT' ? network : undefined,
         }),
       })
 
@@ -118,7 +134,12 @@ export default function WithdrawPage() {
 
   const getWalletAddress = () => {
     if (!profile) return ''
-    return currency === 'BTC' ? profile.btcWallet : profile.ethWallet
+    if (currency === 'BTC') return profile.btcWallet
+    if (currency === 'ETH') return profile.ethWallet
+    if (currency === 'USDT') {
+      return network === 'ERC20' ? profile.usdtErc20Wallet : profile.usdtTrc20Wallet
+    }
+    return ''
   }
 
   if (loading) {
@@ -204,7 +225,7 @@ export default function WithdrawPage() {
             {/* Currency Selection */}
             <div className="space-y-2">
               <label className="text-gray-300 text-sm">Select Cryptocurrency</label>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <button
                   type="button"
                   onClick={() => setCurrency('BTC')}
@@ -223,7 +244,7 @@ export default function WithdrawPage() {
                     </div>
                   </div>
                   {!profile?.btcWallet && (
-                    <div className="text-xs text-red-400 mt-2">⚠️ Wallet not set</div>
+                    <div className="text-xs text-red-400 mt-2">⚠️ Not set</div>
                   )}
                 </button>
                 
@@ -245,11 +266,75 @@ export default function WithdrawPage() {
                     </div>
                   </div>
                   {!profile?.ethWallet && (
-                    <div className="text-xs text-red-400 mt-2">⚠️ Wallet not set</div>
+                    <div className="text-xs text-red-400 mt-2">⚠️ Not set</div>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrency('USDT')}
+                  disabled={!profile?.usdtErc20Wallet && !profile?.usdtTrc20Wallet}
+                  className={`p-4 rounded-lg border text-left transition disabled:opacity-50 disabled:cursor-not-allowed ${
+                    currency === 'USDT' 
+                      ? 'border-green-500 bg-green-500/10' 
+                      : 'border-gray-600 hover:border-green-500/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-8 h-8 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center font-bold">₮</span>
+                    <div>
+                      <div className="font-semibold text-white">Tether</div>
+                      <div className="text-xs text-gray-400">USDT</div>
+                    </div>
+                  </div>
+                  {!profile?.usdtErc20Wallet && !profile?.usdtTrc20Wallet && (
+                    <div className="text-xs text-red-400 mt-2">⚠️ Not set</div>
                   )}
                 </button>
               </div>
             </div>
+
+            {/* Network Selection for USDT */}
+            {currency === 'USDT' && (profile?.usdtErc20Wallet || profile?.usdtTrc20Wallet) && (
+              <div className="space-y-2">
+                <label className="text-gray-300 text-sm">Select Network</label>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setNetwork('ERC20')}
+                    disabled={!profile?.usdtErc20Wallet}
+                    className={`p-3 rounded-lg border text-left transition disabled:opacity-50 disabled:cursor-not-allowed ${
+                      network === 'ERC20' 
+                        ? 'border-blue-500 bg-blue-500/10' 
+                        : 'border-gray-600 hover:border-blue-500/50'
+                    }`}
+                  >
+                    <div className="font-semibold text-white text-sm">ERC-20</div>
+                    <div className="text-xs text-gray-400">Ethereum</div>
+                    {!profile?.usdtErc20Wallet && (
+                      <div className="text-xs text-red-400 mt-1">Not configured</div>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setNetwork('TRC20')}
+                    disabled={!profile?.usdtTrc20Wallet}
+                    className={`p-3 rounded-lg border text-left transition disabled:opacity-50 disabled:cursor-not-allowed ${
+                      network === 'TRC20' 
+                        ? 'border-red-500 bg-red-500/10' 
+                        : 'border-gray-600 hover:border-red-500/50'
+                    }`}
+                  >
+                    <div className="font-semibold text-white text-sm">TRC-20</div>
+                    <div className="text-xs text-gray-400">Tron</div>
+                    {!profile?.usdtTrc20Wallet && (
+                      <div className="text-xs text-red-400 mt-1">Not configured</div>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Destination Wallet */}
             <div className="space-y-2">

@@ -15,11 +15,14 @@ export default function DepositPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [amount, setAmount] = useState('')
   const [currency, setCurrency] = useState('BTC')
+  const [network, setNetwork] = useState<'ERC20' | 'TRC20'>('ERC20')
   const [copied, setCopied] = useState<string | null>(null)
   const [message, setMessage] = useState('')
 
   const BTC_ADDRESS = 'bc1q983wv7283xt69erzra6mk89sq6suc64p6jkhvj'
   const ETH_ADDRESS = '0xd456022fecf34E5cA2593dFb327c39B2096790b5'
+  const USDT_ERC20_ADDRESS = '0xd456022fecf34E5cA2593dFb327c39B2096790b5'
+  const USDT_TRC20_ADDRESS = 'TQPUeUvnpJPPBXATbpogLLiEGotQbPN4x6'
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -49,6 +52,13 @@ export default function DepositPage() {
     navigator.clipboard.writeText(text)
     setCopied(type)
     setTimeout(() => setCopied(null), 2000)
+  }
+
+  const getWalletAddress = () => {
+    if (currency === 'BTC') return BTC_ADDRESS
+    if (currency === 'ETH') return ETH_ADDRESS
+    if (currency === 'USDT') return network === 'ERC20' ? USDT_ERC20_ADDRESS : USDT_TRC20_ADDRESS
+    return ''
   }
 
   const logout = () => {
@@ -127,7 +137,7 @@ export default function DepositPage() {
             {/* Currency Selection */}
             <div className="space-y-2">
               <label className="text-gray-300 text-sm">Select Cryptocurrency</label>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <button
                   type="button"
                   onClick={() => setCurrency('BTC')}
@@ -163,24 +173,78 @@ export default function DepositPage() {
                     </div>
                   </div>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrency('USDT')}
+                  className={`p-4 rounded-lg border text-left transition ${
+                    currency === 'USDT' 
+                      ? 'border-green-500 bg-green-500/10' 
+                      : 'border-gray-600 hover:border-green-500/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-8 h-8 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center font-bold">₮</span>
+                    <div>
+                      <div className="font-semibold text-white">Tether</div>
+                      <div className="text-xs text-gray-400">USDT</div>
+                    </div>
+                  </div>
+                </button>
               </div>
             </div>
+
+            {/* Network Selection for USDT */}
+            {currency === 'USDT' && (
+              <div className="space-y-2">
+                <label className="text-gray-300 text-sm">Select Network</label>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setNetwork('ERC20')}
+                    className={`p-4 rounded-lg border text-left transition ${
+                      network === 'ERC20' 
+                        ? 'border-purple-500 bg-purple-500/10' 
+                        : 'border-gray-600 hover:border-purple-500/50'
+                    }`}
+                  >
+                    <div className="font-semibold text-white">ERC-20</div>
+                    <div className="text-xs text-gray-400">Ethereum Network</div>
+                    <div className="text-xs text-yellow-400 mt-1">Higher fees (~$5-20)</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setNetwork('TRC20')}
+                    className={`p-4 rounded-lg border text-left transition ${
+                      network === 'TRC20' 
+                        ? 'border-red-500 bg-red-500/10' 
+                        : 'border-gray-600 hover:border-red-500/50'
+                    }`}
+                  >
+                    <div className="font-semibold text-white">TRC-20</div>
+                    <div className="text-xs text-gray-400">Tron Network</div>
+                    <div className="text-xs text-green-400 mt-1">Low fees (~$1)</div>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Wallet Address Card */}
         <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-xl p-6 mb-6">
           <h3 className="text-lg font-semibold text-white mb-4">
-            Send {currency} to this address:
+            Send {currency}{currency === 'USDT' && ` (${network})`} to this address:
           </h3>
           
           <div className="bg-gray-900/80 rounded-lg p-4 mb-4">
             <div className="flex items-center justify-between gap-4">
               <code className="text-sm font-mono text-cyan-400 break-all">
-                {currency === 'BTC' ? BTC_ADDRESS : ETH_ADDRESS}
+                {getWalletAddress()}
               </code>
               <button
-                onClick={() => copyToClipboard(currency === 'BTC' ? BTC_ADDRESS : ETH_ADDRESS, 'address')}
+                onClick={() => copyToClipboard(getWalletAddress(), 'address')}
                 className="px-3 py-2 rounded-lg bg-cyan-500/20 text-cyan-400 text-sm hover:bg-cyan-500/30 transition whitespace-nowrap"
               >
                 {copied === 'address' ? '✓ Copied!' : '📋 Copy'}
@@ -191,8 +255,22 @@ export default function DepositPage() {
           <div className="text-sm text-gray-300 space-y-2">
             <p className="flex items-start gap-2">
               <span className="text-yellow-400">⚠️</span>
-              <span>Send only <strong>{currency}</strong> to this address. Sending other assets may result in permanent loss.</span>
+              <span>
+                Send only <strong>{currency}</strong>
+                {currency === 'USDT' && ` on ${network} network`}
+                {' '}to this address. Sending other assets or using wrong network may result in permanent loss.
+              </span>
             </p>
+            {currency === 'USDT' && network === 'ERC20' && (
+              <p className="text-xs text-purple-400">
+                Using ERC-20 (Ethereum). Make sure you have enough ETH for gas fees.
+              </p>
+            )}
+            {currency === 'USDT' && network === 'TRC20' && (
+              <p className="text-xs text-red-400">
+                Using TRC-20 (Tron). Make sure you have enough TRX for gas fees.
+              </p>
+            )}
           </div>
         </div>
 
