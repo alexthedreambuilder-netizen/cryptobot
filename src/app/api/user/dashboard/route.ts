@@ -96,7 +96,11 @@ export async function GET(req: NextRequest) {
       },
     })
 
-    const canDoChallenge = !todaysChallenge || !todaysChallenge.completed
+    // Calculate account age in hours
+    const accountAgeHours = Math.floor((Date.now() - user.createdAt.getTime()) / (1000 * 60 * 60))
+    const isAccountOldEnough = accountAgeHours >= 24
+
+    const canDoChallenge = isAccountOldEnough && (!todaysChallenge || !todaysChallenge.completed)
     const lastChallengeDate = user.lastChallengeDate
     const hoursSinceLastChallenge = lastChallengeDate 
       ? Math.floor((Date.now() - lastChallengeDate.getTime()) / (1000 * 60 * 60))
@@ -142,6 +146,8 @@ export async function GET(req: NextRequest) {
         available: canDoChallenge,
         hoursUntilNext: hoursSinceLastChallenge !== null ? Math.max(0, 24 - hoursSinceLastChallenge) : 0,
         completedToday: todaysChallenge?.completed || false,
+        accountAgeHours,
+        unlocksIn: Math.max(0, 24 - accountAgeHours),
       },
       referral: {
         myId: user.uniqueId,

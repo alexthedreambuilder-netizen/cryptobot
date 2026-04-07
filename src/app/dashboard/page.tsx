@@ -32,6 +32,8 @@ interface DashboardData {
     available: boolean
     hoursUntilNext: number
     completedToday: boolean
+    accountAgeHours: number
+    unlocksIn: number
   }
   referral: {
     myId: string
@@ -265,7 +267,7 @@ export default function Dashboard() {
                 <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                   <div 
                     className={`h-full rounded-full transition-all ${data.points.nextLevelProgress.referralsNeeded <= 0 ? 'bg-green-400' : 'bg-cyan-400'}`}
-                    style={{ width: `${Math.min(100, (data.referral.activeReferrals / (data.referral.activeReferrals + Math.max(1, data.points.nextLevelProgress.referralsNeeded))) * 100)}%` }}
+                    style={{ width: `${data.points.nextLevelProgress.referralsNeeded <= 0 ? 100 : Math.min(100, (data.referral.activeReferrals / (data.referral.activeReferrals + data.points.nextLevelProgress.referralsNeeded)) * 100)}%` }}
                   />
                 </div>
               </div>
@@ -296,8 +298,27 @@ export default function Dashboard() {
               </div>
             )}
 
+            {/* What's Needed Summary */}
+            <div className="mt-4 p-3 rounded-lg bg-white/5 border border-white/10">
+              <div className="text-sm text-gray-300">
+                <span className="text-white font-semibold">Still need: </span>
+                {data.points.nextLevelProgress.pointsNeeded > 0 && (
+                  <span className="text-yellow-400">${data.points.nextLevelProgress.pointsNeeded} balance </span>
+                )}
+                {data.points.nextLevelProgress.referralsNeeded > 0 && (
+                  <span className="text-cyan-400">{data.points.nextLevelProgress.referralsNeeded} referral{data.points.nextLevelProgress.referralsNeeded > 1 ? 's' : ''} </span>
+                )}
+                {data.points.nextLevelProgress.daysNeeded > 0 && (
+                  <span className="text-purple-400">{data.points.nextLevelProgress.daysNeeded} day{data.points.nextLevelProgress.daysNeeded > 1 ? 's' : ''} </span>
+                )}
+                {data.points.nextLevelProgress.pointsNeeded <= 0 && data.points.nextLevelProgress.referralsNeeded <= 0 && data.points.nextLevelProgress.daysNeeded <= 0 && (
+                  <span className="text-green-400">✓ All requirements met!</span>
+                )}
+              </div>
+            </div>
+
             {/* Success Message */}
-            {!data.points.nextLevelProgress.blockReason && data.profile.level < 4 && (
+            {!data.points.nextLevelProgress.blockReason && data.profile.level < 4 && data.points.nextLevelProgress.pointsNeeded <= 0 && data.points.nextLevelProgress.referralsNeeded <= 0 && data.points.nextLevelProgress.daysNeeded <= 0 && (
               <div className="mt-4 p-3 rounded-lg bg-green-500/20 border border-green-500/30">
                 <div className="text-sm text-green-400">
                   ✓ All requirements met! Level up coming soon.
@@ -347,11 +368,21 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm text-gray-400 mb-1">Daily Challenge</div>
-              <div className={`text-2xl font-bold ${data.daily.available ? 'text-green-400' : 'text-gray-500'}`}>
-                {data.daily.available ? 'Available' : 'Completed'}
-              </div>
+              {data.daily.accountAgeHours < 24 ? (
+                <div className="text-2xl font-bold text-orange-400">
+                  Unlocks in {data.daily.unlocksIn}h
+                </div>
+              ) : (
+                <div className={`text-2xl font-bold ${data.daily.available ? 'text-green-400' : 'text-gray-500'}`}>
+                  {data.daily.available ? 'Available' : 'Completed'}
+                </div>
+              )}
             </div>
-            {data.daily.available ? (
+            {data.daily.accountAgeHours < 24 ? (
+              <div className="text-sm text-orange-400">
+                New accounts wait 24h
+              </div>
+            ) : data.daily.available ? (
               <Link 
                 href="/challenge"
                 className="px-6 py-3 rounded-xl bg-gradient-to-r from-yellow-400 to-cyan-400 text-black font-bold hover:opacity-90 transition"
