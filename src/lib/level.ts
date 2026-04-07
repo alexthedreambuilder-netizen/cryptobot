@@ -4,9 +4,9 @@
 export const LEVELS = {
   0: { minPoints: 0, maxPoints: 0, minReferrals: 0, daysRequired: 0, dailyPercent: 0 },
   1: { minPoints: 1, maxPoints: 249, minReferrals: 0, daysRequired: 0, dailyPercent: 3.4 },
-  2: { minPoints: 250, maxPoints: 499, minReferrals: 2, daysRequired: 4, dailyPercent: 5.1 },
-  3: { minPoints: 500, maxPoints: 1199, minReferrals: 4, daysRequired: 3, dailyPercent: 5.8 }, // 3 zile DE LA LvL 2
-  4: { minPoints: 1200, maxPoints: Infinity, minReferrals: 6, daysRequired: 3, dailyPercent: 6.3 }, // 3 zile DE LA LvL 3
+  2: { minPoints: 250, maxPoints: 499, minReferrals: 2, daysRequired: 2, dailyPercent: 5.1 }, // 2 zile de la LvL 1
+  3: { minPoints: 500, maxPoints: 1199, minReferrals: 4, daysRequired: 2, dailyPercent: 5.8 }, // 2 zile de la LvL 2 (reset)
+  4: { minPoints: 1200, maxPoints: Infinity, minReferrals: 6, daysRequired: 2, dailyPercent: 6.3 }, // 2 zile de la LvL 3 (reset)
 }
 
 export type Level = 0 | 1 | 2 | 3 | 4
