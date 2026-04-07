@@ -26,10 +26,6 @@ export async function POST(
       where: {
         id,
         type: 'WITHDRAWAL_REQUEST',
-        metadata: {
-          path: ['status'],
-          equals: 'PENDING',
-        },
       },
       include: { user: true },
     })
@@ -39,7 +35,13 @@ export async function POST(
     }
 
     const amount = Math.abs(withdrawalRequest.pointsChange || 0)
-    const currency = withdrawalRequest.metadata?.currency || 'BTC'
+    const metadata = withdrawalRequest.metadata as any
+
+    // Check if it's still pending
+    if (metadata?.status && metadata.status !== 'PENDING') {
+      return NextResponse.json({ error: 'Withdrawal request already processed' }, { status: 400 })
+    }
+    const currency = metadata?.currency || 'BTC'
 
     // Refund the points to user
     await prisma.user.update({
@@ -57,12 +59,12 @@ export async function POST(
         type: 'WITHDRAWAL_REJECTED',
         description: `Withdrawal rejected: $${amount} in ${currency} - Points refunded`,
         metadata: {
-          ...withdrawalRequest.metadata,
+          ...(typeof withdrawalRequest.metadata === 'object' && withdrawalRequest.metadata !== null ? withdrawalRequest.metadata : {}),
           status: 'REJECTED',
           rejectedAt: new Date().toISOString(),
           rejectedBy: payload.username,
           pointsRefunded: amount,
-        },
+        } as any,
       },
     })
 
@@ -80,7 +82,7 @@ export async function POST(
           rejectedBy: payload.username,
           rejectedAt: new Date().toISOString(),
           pointsRefunded: true,
-        },
+        } as any,
       },
     })
 

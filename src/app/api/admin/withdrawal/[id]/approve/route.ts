@@ -26,10 +26,6 @@ export async function POST(
       where: {
         id,
         type: 'WITHDRAWAL_REQUEST',
-        metadata: {
-          path: ['status'],
-          equals: 'PENDING',
-        },
       },
       include: { user: true },
     })
@@ -39,9 +35,15 @@ export async function POST(
     }
 
     const amount = Math.abs(withdrawalRequest.pointsChange || 0)
-    const currency = withdrawalRequest.metadata?.currency || 'BTC'
-    const network = withdrawalRequest.metadata?.network || null
-    const walletAddress = withdrawalRequest.metadata?.walletAddress || ''
+    const metadata = withdrawalRequest.metadata as any
+
+    // Check if it's still pending
+    if (metadata?.status && metadata.status !== 'PENDING') {
+      return NextResponse.json({ error: 'Withdrawal request already processed' }, { status: 400 })
+    }
+    const currency = metadata?.currency || 'BTC'
+    const network = metadata?.network || null
+    const walletAddress = metadata?.walletAddress || ''
 
     // Update the history entry
     await prisma.history.update({
@@ -50,11 +52,11 @@ export async function POST(
         type: 'WITHDRAWAL_APPROVED',
         description: `Withdrawal approved: $${amount} in ${currency}${network ? ` (${network})` : ''} to ${walletAddress}`,
         metadata: {
-          ...withdrawalRequest.metadata,
+          ...(typeof withdrawalRequest.metadata === 'object' && withdrawalRequest.metadata !== null ? withdrawalRequest.metadata : {}),
           status: 'APPROVED',
           approvedAt: new Date().toISOString(),
           approvedBy: payload.username,
-        },
+        } as any,
       },
     })
 
@@ -73,7 +75,7 @@ export async function POST(
           walletAddress,
           approvedBy: payload.username,
           approvedAt: new Date().toISOString(),
-        },
+        } as any,
       },
     })
 

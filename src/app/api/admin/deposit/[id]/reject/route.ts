@@ -26,13 +26,19 @@ export async function POST(
       where: {
         id,
         type: 'DEPOSIT_PENDING',
-        metadata: {
-          path: ['status'],
-          equals: 'PENDING',
-        },
       },
       include: { user: true },
     })
+
+    if (!depositRequest) {
+      return NextResponse.json({ error: 'Deposit request not found' }, { status: 404 })
+    }
+
+    // Check if it's still pending
+    const metadata = depositRequest.metadata as any
+    if (metadata?.status && metadata.status !== 'PENDING') {
+      return NextResponse.json({ error: 'Deposit request already processed' }, { status: 400 })
+    }
 
     if (!depositRequest) {
       return NextResponse.json({ error: 'Deposit request not found' }, { status: 404 })
@@ -47,11 +53,11 @@ export async function POST(
         type: 'DEPOSIT_REJECTED',
         description: `Deposit rejected: $${amount}`,
         metadata: {
-          ...depositRequest.metadata,
+          ...(typeof depositRequest.metadata === 'object' && depositRequest.metadata !== null ? depositRequest.metadata : {}),
           status: 'REJECTED',
           rejectedAt: new Date().toISOString(),
           rejectedBy: payload.username,
-        },
+        } as any,
       },
     })
 
@@ -67,7 +73,7 @@ export async function POST(
           originalRequestId: id,
           rejectedBy: payload.username,
           rejectedAt: new Date().toISOString(),
-        },
+        } as any,
       },
     })
 

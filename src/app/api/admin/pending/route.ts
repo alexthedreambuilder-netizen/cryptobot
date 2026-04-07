@@ -17,16 +17,12 @@ export async function GET(req: Request) {
 
   try {
     // Get all pending history entries (withdrawals and deposits)
-    const pendingRequests = await prisma.history.findMany({
+    const allRequests = await prisma.history.findMany({
       where: {
         OR: [
           { type: 'WITHDRAWAL_REQUEST' },
           { type: 'DEPOSIT_PENDING' },
         ],
-        metadata: {
-          path: ['status'],
-          equals: 'PENDING',
-        },
       },
       orderBy: { createdAt: 'desc' },
       include: {
@@ -40,6 +36,12 @@ export async function GET(req: Request) {
       },
     })
 
+    // Filter for pending status manually (metadata.status === 'PENDING' or no status)
+    const pendingRequests = allRequests.filter((req) => {
+      const meta = req.metadata as any
+      return !meta?.status || meta.status === 'PENDING'
+    })
+
     const formattedRequests = pendingRequests.map((req) => ({
       id: req.id,
       userId: req.userId,
@@ -47,10 +49,10 @@ export async function GET(req: Request) {
       uniqueId: req.user.uniqueId,
       type: req.type === 'WITHDRAWAL_REQUEST' ? 'WITHDRAWAL' : 'DEPOSIT',
       amount: Math.abs(req.pointsChange || 0),
-      currency: req.metadata?.currency || 'BTC',
-      network: req.metadata?.network || null,
-      walletAddress: req.metadata?.walletAddress || null,
-      txHash: req.metadata?.txHash || null,
+      currency: (req.metadata as any)?.currency || 'BTC',
+      network: (req.metadata as any)?.network || null,
+      walletAddress: (req.metadata as any)?.walletAddress || null,
+      txHash: (req.metadata as any)?.txHash || null,
       status: 'PENDING',
       createdAt: req.createdAt,
     }))
