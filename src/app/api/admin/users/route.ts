@@ -44,14 +44,19 @@ export async function GET(req: NextRequest) {
         id: user.id,
         username: user.username,
         uniqueId: user.uniqueId,
+        firstName: user.firstName,
+        lastName: user.lastName,
         level: user.level,
         points: user.points,
         activeReferrals: user.activeReferrals,
         totalReferrals: user._count.referrals,
+        btcWallet: user.btcWallet,
+        ethWallet: user.ethWallet,
         daysAtCurrentLevel,
         totalPercent,
         isAdmin: user.isAdmin,
         createdAt: user.createdAt,
+        lastPointsChange: user.lastPointsChange,
       }
     })
 
