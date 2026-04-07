@@ -27,12 +27,21 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify referrer if provided
-    let validReferrerId: string | undefined = undefined
+    let validReferrerId: string | null = null
     if (referrerId && referrerId.trim()) {
-      const referrer = await prisma.user.findUnique({ where: { uniqueId: referrerId.trim() } })
+      const trimmedReferrerId = referrerId.trim()
+      console.log('Looking for referrer with ID:', trimmedReferrerId)
+      
+      const referrer = await prisma.user.findUnique({ 
+        where: { uniqueId: trimmedReferrerId } 
+      })
+      
       if (!referrer) {
+        console.log('Referrer not found:', trimmedReferrerId)
         return NextResponse.json({ error: 'Invalid Referrer ID' }, { status: 400 })
       }
+      
+      console.log('Found referrer:', referrer.username, 'with uniqueId:', referrer.uniqueId)
       validReferrerId = referrer.uniqueId
     }
 
@@ -44,7 +53,7 @@ export async function POST(req: NextRequest) {
       data: {
         username,
         password: hashedPassword,
-        referrerId: validReferrerId,
+        referrerId: validReferrerId || null,
         level: 0,
         points: 0,
       },
