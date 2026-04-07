@@ -38,6 +38,12 @@ model User {
   // Admin
   isAdmin           Boolean  @default(false)
   
+  // Profile
+  firstName         String?
+  lastName          String?
+  btcWallet         String?
+  ethWallet         String?
+  
   // Relații
   history           History[]
   challenges        DailyChallenge[]
