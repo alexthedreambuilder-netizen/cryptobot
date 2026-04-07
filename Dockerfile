@@ -21,8 +21,16 @@ COPY . .
 # Build the app
 RUN npm run build
 
+# Copy standalone server
+COPY .next/standalone ./
+COPY .next/static ./.next/static
+
 # Expose port
 EXPOSE 3000
 
-# Start command - migrate DB and start
-CMD npx prisma migrate deploy && npm start
+# Set environment
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# Start command
+CMD node server.js
