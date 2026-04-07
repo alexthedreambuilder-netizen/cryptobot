@@ -1,0 +1,3 @@
+-- Add USDT wallet fields
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "usdtErc20Wallet" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "usdtTrc20Wallet" TEXT;
