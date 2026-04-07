@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { User, LogOut } from 'lucide-react'
 
 interface NavbarProps {
   username?: string
@@ -37,7 +36,7 @@ export function Navbar({ username, showProfile = true }: NavbarProps) {
             className="p-2 rounded-full border border-cyan-400/50 text-cyan-400 hover:bg-cyan-400/10 transition"
             title="Profile Settings"
           >
-            <User className="w-5 h-5" />
+            👤
           </Link>
         )}
         
@@ -46,7 +45,7 @@ export function Navbar({ username, showProfile = true }: NavbarProps) {
           className="p-2 rounded-full border border-red-400/50 text-red-400 hover:bg-red-400/10 transition"
           title="Logout"
         >
-          <LogOut className="w-5 h-5" />
+          🚪
         </button>
       </div>
     </header>
