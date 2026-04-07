@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/middleware'
-import { calculateLevel, calculateTotalPercent, getBasePercent, calculateReferralBonus, calculatePatienceBonus } from '@/lib/level'
+import { calculateLevel, calculateTotalPercent, calculatePatienceBonus } from '@/lib/level'
 
 // GET - Listează toți userii
 export async function GET(req: NextRequest) {
@@ -34,6 +34,9 @@ export async function GET(req: NextRequest) {
       const daysSinceChange = Math.floor(
         (Date.now() - user.lastPointsChange.getTime()) / (1000 * 60 * 60 * 24)
       )
+      const daysAtCurrentLevel = Math.floor(
+        (Date.now() - user.lastLevelUpDate.getTime()) / (1000 * 60 * 60 * 24)
+      )
       const patienceBonus = calculatePatienceBonus(daysSinceChange)
       const totalPercent = calculateTotalPercent(user.level, user.activeReferrals, patienceBonus)
 
@@ -45,7 +48,7 @@ export async function GET(req: NextRequest) {
         points: user.points,
         activeReferrals: user.activeReferrals,
         totalReferrals: user._count.referrals,
-        daysWithoutWithdrawal: user.daysWithoutWithdrawal,
+        daysAtCurrentLevel,
         totalPercent,
         isAdmin: user.isAdmin,
         createdAt: user.createdAt,
