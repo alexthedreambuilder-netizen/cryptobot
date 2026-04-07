@@ -16,8 +16,12 @@ export default function DepositPage() {
   const [amount, setAmount] = useState('')
   const [currency, setCurrency] = useState('BTC')
   const [network, setNetwork] = useState<'ERC20' | 'TRC20'>('ERC20')
+  const [txHash, setTxHash] = useState('')
   const [copied, setCopied] = useState<string | null>(null)
   const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [success, setSuccess] = useState(false)
 
   const BTC_ADDRESS = 'bc1q983wv7283xt69erzra6mk89sq6suc64p6jkhvj'
   const ETH_ADDRESS = '0xd456022fecf34E5cA2593dFb327c39B2096790b5'
@@ -65,6 +69,53 @@ export default function DepositPage() {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     router.push('/')
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setMessage('')
+
+    if (!amount || parseFloat(amount) <= 0) {
+      setError('Please enter a valid amount')
+      return
+    }
+
+    if (!txHash.trim()) {
+      setError('Please enter the transaction hash')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch('/api/user/deposit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          amount: parseFloat(amount),
+          currency,
+          network: currency === 'USDT' ? network : undefined,
+          txHash: txHash.trim(),
+        }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to submit deposit request')
+      }
+
+      setSuccess(true)
+      setAmount('')
+      setTxHash('')
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   if (loading) {
@@ -299,22 +350,71 @@ export default function DepositPage() {
           </div>
         </div>
 
+        {/* Submit Deposit Request */}
+        <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-xl p-6 mb-6">
+          <h3 className="text-lg font-semibold text-white mb-4">✅ Submit Deposit Request</h3>
+          
+          {success ? (
+            <div className="p-4 rounded-lg bg-green-500/20 border border-green-500/50 text-green-400">
+              <div className="font-semibold mb-1">✓ Deposit Request Submitted!</div>
+              <p className="text-sm">Your deposit request is pending admin approval. You will receive the points once verified.</p>
+              <button
+                onClick={() => setSuccess(false)}
+                className="mt-3 px-4 py-2 rounded-lg bg-green-500/20 text-green-400 text-sm hover:bg-green-500/30 transition"
+              >
+                Submit Another
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="p-3 rounded-lg bg-red-500/20 border border-red-500/50 text-red-400 text-sm">
+                  {error}
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                <label className="text-gray-300 text-sm">Transaction Hash (TXID)</label>
+                <input
+                  type="text"
+                  value={txHash}
+                  onChange={(e) => setTxHash(e.target.value)}
+                  placeholder="Enter the transaction hash from your wallet"
+                  className="w-full px-4 py-3 rounded-lg bg-gray-900/50 border border-gray-600 text-white placeholder:text-gray-500 font-mono text-sm focus:border-green-400 focus:outline-none"
+                />
+                <p className="text-xs text-gray-400">
+                  You can find this in your wallet after sending the transaction
+                </p>
+              </div>
+
+              <button
+                type="submit"
+                disabled={submitting || !amount || !txHash}
+                className="w-full py-3 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold transition disabled:opacity-50"
+              >
+                {submitting ? 'Submitting...' : '📤 Submit Deposit Request'}
+              </button>
+            </form>
+          )}
+        </div>
+
         {/* Instructions */}
         <div className="bg-gray-800/30 border border-gray-700 rounded-xl p-6">
           <h3 className="text-lg font-semibold text-white mb-4">📋 Instructions:</h3>
           <ol className="space-y-3 text-sm text-gray-300 list-decimal list-inside">
             <li>Enter the amount you want to deposit in USD</li>
-            <li>Select your preferred cryptocurrency (BTC or ETH)</li>
+            <li>Select your preferred cryptocurrency</li>
             <li>Copy the wallet address shown above</li>
-            <li><strong className="text-yellow-400">IMPORTANT:</strong> Copy your Unique ID and paste it in the memo/reference field</li>
+            <li><strong className="text-yellow-400">IMPORTANT:</strong> Include your Unique ID in the memo/reference field</li>
             <li>Send the exact amount from your wallet</li>
-            <li>Wait for network confirmations (usually 3-6 blocks)</li>
-            <li>Your balance will be updated automatically</li>
+            <li>Copy the Transaction Hash (TXID) from your wallet</li>
+            <li>Submit the deposit request above with the TXID</li>
+            <li>Wait for admin approval (usually within 24 hours)</li>
           </ol>
           
-          <div className="mt-4 p-4 rounded-lg bg-red-500/10 border border-red-500/30">
-            <p className="text-sm text-red-400">
-              <strong>Note:</strong> Deposits are processed manually by admin after verification. This may take up to 24 hours.
+          <div className="mt-4 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+            <p className="text-sm text-yellow-400">
+              <strong>⚠️ Important:</strong> Your deposit will only be credited after admin verification. Make sure to submit the correct transaction hash.
             </p>
           </div>
         </div>
