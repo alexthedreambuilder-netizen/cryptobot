@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import TelegramChat from '../components/TelegramChat'
 
 interface User {
   id: string
@@ -523,6 +524,17 @@ export default function Admin() {
                     )}
                   </tbody>
                 </table>
+              </div>
+            </div>
+
+            {/* Telegram Support Chat */}
+            <div className="mt-6 rounded-xl border border-white/10 overflow-hidden">
+              <div className="p-4 bg-white/5 border-b border-white/10 flex items-center justify-between">
+                <h3 className="text-lg font-semibold">💬 Telegram Support</h3>
+                <span className="text-xs text-gray-400">Live chat with users</span>
+              </div>
+              <div className="p-4">
+                <TelegramChat />
               </div>
             </div>
           </>

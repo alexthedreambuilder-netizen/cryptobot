@@ -121,3 +121,35 @@ enum HistoryType {
   DEPOSIT_REJECTED
   ADMIN_UPDATE
 }
+
+// Telegram Support Chat Models
+model TelegramChat {
+  id          String   @id @default(uuid())
+  chatId      BigInt   @unique
+  username    String?
+  firstName   String?
+  lastName    String?
+  status      String   @default("ACTIVE") // ACTIVE, CLOSED, BLOCKED
+  lastMessageAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  messages    TelegramMessage[]
+  
+  @@index([status])
+}
+
+model TelegramMessage {
+  id          String   @id @default(uuid())
+  chatId      BigInt
+  messageId   BigInt
+  text        String
+  fromUser    Boolean  @default(true) // true = user, false = admin
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  
+  chat        TelegramChat @relation(fields: [chatId], references: [chatId], onDelete: Cascade)
+  
+  @@index([chatId])
+  @@index([createdAt])
+}
