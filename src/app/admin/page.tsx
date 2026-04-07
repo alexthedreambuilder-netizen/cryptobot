@@ -41,6 +41,8 @@ export default function Admin() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [userHistory, setUserHistory] = useState<HistoryEntry[]>([])
   const [viewMode, setViewMode] = useState<'list' | 'details'>('list')
+  const [editingDays, setEditingDays] = useState(false)
+  const [newDaysValue, setNewDaysValue] = useState('')
   const router = useRouter()
 
   useEffect(() => {
@@ -122,6 +124,39 @@ export default function Admin() {
     setSelectedUser(user)
     fetchUserHistory(user.id)
     setViewMode('details')
+    setEditingDays(false)
+    setNewDaysValue(user.daysAtCurrentLevel.toString())
+  }
+
+  const updateDaysAtCurrentLevel = async () => {
+    if (!selectedUser) return
+    
+    const token = localStorage.getItem('token')
+    if (!token) return
+
+    try {
+      const res = await fetch(`/api/admin/users/${selectedUser.id}/stats`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          daysAtCurrentLevel: parseInt(newDaysValue) || 0,
+        }),
+      })
+
+      if (!res.ok) throw new Error('Failed to update')
+      
+      const updatedUser = { ...selectedUser, daysAtCurrentLevel: parseInt(newDaysValue) || 0 }
+      setSelectedUser(updatedUser)
+      setEditingDays(false)
+      
+      // Refresh user list
+      fetchUsers(token)
+    } catch (err) {
+      alert('Failed to update days at current level')
+    }
   }
 
   const logout = () => {
@@ -263,7 +298,44 @@ export default function Admin() {
               <div className="p-4 rounded-xl bg-white/5 border border-white/10">
                 <div className="text-sm text-gray-400">Level</div>
                 <div className="text-xl font-bold">LvL {selectedUser.level}</div>
-                <div className="text-xs text-gray-500">Days at level: {selectedUser.daysAtCurrentLevel}</div>
+                <div className="mt-2">
+                  {!editingDays ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500">Days at level: {selectedUser.daysAtCurrentLevel}</span>
+                      <button 
+                        onClick={() => setEditingDays(true)}
+                        className="text-xs px-2 py-1 rounded bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 transition"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 mt-1">
+                      <input
+                        type="number"
+                        value={newDaysValue}
+                        onChange={(e) => setNewDaysValue(e.target.value)}
+                        className="w-20 px-2 py-1 rounded bg-gray-900/50 border border-gray-600 text-white text-sm"
+                        min="0"
+                      />
+                      <button 
+                        onClick={updateDaysAtCurrentLevel}
+                        className="text-xs px-2 py-1 rounded bg-green-500/20 text-green-400 hover:bg-green-500/30 transition"
+                      >
+                        Save
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setEditingDays(false)
+                          setNewDaysValue(selectedUser.daysAtCurrentLevel.toString())
+                        }}
+                        className="text-xs px-2 py-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="p-4 rounded-xl bg-white/5 border border-white/10">
                 <div className="text-sm text-gray-400">Balance</div>
