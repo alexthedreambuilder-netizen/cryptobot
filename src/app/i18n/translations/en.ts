@@ -1,0 +1,47 @@
+export const en = {
+  nav: {
+    home: 'Home',
+    dashboard: 'Dashboard',
+    profile: 'Profile',
+    history: 'History',
+    howItWorks: 'How It Works',
+    login: 'Login',
+    register: 'Register',
+    logout: 'Logout',
+  },
+  home: {
+    title: 'Crypto Bambozl\'d',
+    subtitle: 'Earn passive income with crypto staking',
+    getStarted: 'Get Started',
+  },
+  dashboard: {
+    title: 'Dashboard',
+    balance: 'Balance',
+    deposit: 'Deposit',
+    withdraw: 'Withdraw',
+    dailyChallenge: 'Daily Challenge',
+    available: 'Available',
+    completed: 'Completed',
+    startChallenge: 'Start Challenge',
+    returnIn: 'Return in {hours}h',
+    unlocksIn: 'Unlocks in {hours}h',
+    newAccountsWait: 'New accounts wait 24h',
+    requirementsFor: 'Requirements for LvL {level}',
+    activeReferrals: 'Active Referrals',
+    daysAtLevel: 'Days at Current Level',
+    stillNeed: 'Still need:',
+    allRequirementsMet: '✓ All requirements met!',
+    referralSystem: 'Referral System',
+    yourId: 'Your Unique ID',
+    copy: 'Copy',
+    percentBreakdown: 'Percent Breakdown',
+    total: 'Total',
+  },
+  common: {
+    loading: 'Loading...',
+    save: 'Save',
+    back: 'Back',
+  },
+}
+
+export type Translations = typeof en
