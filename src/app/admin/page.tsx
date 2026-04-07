@@ -190,9 +190,9 @@ export default function Admin() {
           </Link>
           <span className="px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-xs font-bold">ADMIN</span>
         </div>
-        <div className="flex items-center gap-4">
-          <Link href="/admin" className="text-cyan-400 font-semibold">Users</Link>
-          <Link href="/admin/pending" className="text-gray-400 hover:text-white transition">Pending</Link>
+        <div className="flex items-center gap-3">
+          <Link href="/admin" className="px-4 py-2 rounded-full bg-cyan-400/20 text-cyan-400 text-sm font-semibold">👥 Users</Link>
+          <Link href="/admin/pending" className="px-4 py-2 rounded-full bg-white/5 text-gray-300 text-sm hover:bg-white/10 transition">⏳ Pending</Link>
           <button onClick={logout} className="px-4 py-2 rounded-full border border-red-400/50 text-red-400 text-sm hover:bg-red-400/10 transition">Logout</button>
         </div>
       </header>
