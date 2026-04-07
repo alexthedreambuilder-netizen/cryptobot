@@ -62,7 +62,7 @@ export async function POST(req: Request) {
         type: 'DEPOSIT_PENDING',
         description: `Deposit request: $${amount} in ${currency}${network ? ` (${network})` : ''} - Pending verification`,
         pointsChange: amount,
-        newPoints: user.points + amount,
+        newPoints: user.points,  // Points not added yet, pending approval
         metadata: {
           currency,
           network: network || null,
