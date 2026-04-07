@@ -24,10 +24,5 @@ RUN npm run build
 # Expose port
 EXPOSE 3000
 
-# Set environment
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
-ENV NODE_ENV=production
-
-# Start command
-CMD npx prisma migrate deploy && npx next start
+# Start command - migrate DB and start server
+CMD npx prisma migrate deploy && npm run start -- --hostname 0.0.0.0 --port 3000
