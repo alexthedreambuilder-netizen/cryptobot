@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String   @id @default(uuid())
+  username          String   @unique
+  password          String
+  uniqueId          String   @unique @default(cuid()) // ID pentru referral (ex: USR-8F29KQ)
+  
+  // Stats
+  points            Int      @default(0)
+  level             Int      @default(0)
+  
+  // Referral
+  referrerId        String?  // ID-ul celui care l-a invitat
+  referrer          User?    @relation("Referrals", fields: [referrerId], references: [uniqueId])
+  referrals         User[]   @relation("Referrals")
+  activeReferrals   Int      @default(0) // Numărul de invitați activi
+  
+  // Bonus răbdare
+  patienceBonus     Float    @default(0) // 0-2%
+  lastPointsChange  DateTime @default(now())
+  
+  // Level up tracking - days since last level up (for level requirements)
+  lastLevelUpDate   DateTime @default(now()) // Data când a făcut ultimul level up
+  daysAtCurrentLevel Int     @default(0) // Câte zile are la levelul curent (fără retragere)
+  
+  // Daily challenge
+  lastChallengeDate DateTime? // Data ultimei provocări completate
+  streakDays        Int      @default(0) // Zile consecutive
+  
+  // Admin
+  isAdmin           Boolean  @default(false)
+  
+  // Relații
+  history           History[]
+  challenges        DailyChallenge[]
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model History {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type        HistoryType
+  description String
+  pointsChange Int?    // Diferența de puncte (poate fi negativ)
+  newPoints   Int?     // Punctele după schimbare
+  
+  metadata    Json?    // Date suplimentare (ex: cine a făcut acțiunea, etc.)
+  
+  createdAt   DateTime @default(now())
+}
+
+model DailyChallenge {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  date        DateTime @default(now())
+  completed   Boolean  @default(false)
+  
+  // Jocurile din challenge (3 mini-games)
+  game1Type   String   // Tipul primului joc
+  game1Data   Json?    // Date specifice jocului
+  game1Completed Boolean @default(false)
+  
+  game2Type   String
+  game2Data   Json?
+  game2Completed Boolean @default(false)
+  
+  game3Type   String
+  game3Data   Json?
+  game3Completed Boolean @default(false)
+  
+  rewardCalculated Float? // Procentul calculat pentru reward
+  rewardPoints  Int?     // Punctele primite
+  
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+  
+  @@unique([userId, date]) // Un challenge pe zi per user
+}
+
+enum HistoryType {
+  REGISTER
+  SET_REFERRER
+  POINTS_ADDED
+  POINTS_REMOVED
+  REFERRAL_ACTIVATED
+  DAILY_REWARD
+  LEVEL_UP
+  LEVEL_DOWN
+  PATIENCE_BONUS_RESET
+  CHALLENGE_COMPLETED
+  MILESTONE_REACHED
+  WITHDRAWAL_STREAK_BROKEN
+}
