@@ -141,6 +141,12 @@ export default function Dashboard() {
         </h1>
         <div className="flex items-center gap-4">
           <span className="text-gray-400 hidden md:inline">{data.profile.username}</span>
+          <Link 
+            href="/profile"
+            className="px-4 py-2 rounded-full border border-cyan-400/50 text-cyan-400 text-sm hover:bg-cyan-400/10 transition"
+          >
+            👤 Profile
+          </Link>
           <button 
             onClick={logout}
             className="px-4 py-2 rounded-full border border-red-400/50 text-red-400 text-sm hover:bg-red-400/10 transition"

@@ -149,6 +149,27 @@ export default function ProfilePage() {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Profile Settings</h1>
           <p className="text-gray-400">Manage your personal information and wallet addresses</p>
+          
+          {/* Unique ID Card */}
+          {profile && (
+            <div className="mt-4 p-4 rounded-xl bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 inline-block">
+              <div className="text-sm text-gray-400 mb-1">Your Unique Referral ID</div>
+              <div className="flex items-center gap-3">
+                <code className="text-xl font-mono font-bold text-cyan-400">{profile.uniqueId}</code>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(profile.uniqueId)
+                    setMessage('ID copied to clipboard!')
+                    setTimeout(() => setMessage(''), 2000)
+                  }}
+                  className="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-400 text-sm hover:bg-cyan-500/30 transition"
+                >
+                  📋 Copy
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">Share this ID with friends to invite them</p>
+            </div>
+          )}
         </div>
 
         {/* Messages */}
