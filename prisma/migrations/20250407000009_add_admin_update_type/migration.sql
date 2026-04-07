@@ -1,0 +1,2 @@
+-- Add ADMIN_UPDATE to HistoryType enum
+ALTER TYPE "HistoryType" ADD VALUE IF NOT EXISTS 'ADMIN_UPDATE';
