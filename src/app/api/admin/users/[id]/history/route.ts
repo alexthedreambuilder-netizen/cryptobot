@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth'
 
 export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authHeader = req.headers.get('authorization')
   if (!authHeader?.startsWith('Bearer ')) {
@@ -19,8 +19,9 @@ export async function GET(
   }
 
   try {
+    const { id } = await params
     const history = await prisma.history.findMany({
-      where: { userId: params.id },
+      where: { userId: id },
       orderBy: { createdAt: 'desc' },
       take: 100,
     })
