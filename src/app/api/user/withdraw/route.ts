@@ -22,7 +22,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid amount' }, { status: 400 })
     }
 
-    if (!['BTC', 'ETH'].includes(currency)) {
+    if (!['BTC', 'ETH', 'USDT'].includes(currency)) {
       return NextResponse.json({ error: 'Invalid currency' }, { status: 400 })
     }
 
@@ -33,6 +33,8 @@ export async function POST(req: Request) {
         points: true,
         btcWallet: true,
         ethWallet: true,
+        usdtErc20Wallet: true,
+        usdtTrc20Wallet: true,
         username: true,
         uniqueId: true,
       }
