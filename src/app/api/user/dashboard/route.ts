@@ -53,58 +53,48 @@ export async function GET(req: NextRequest) {
     )
     const patienceBonus = calculatePatienceBonus(daysSinceChange)
 
-    // Verifică level actual vs expected
-    const expectedLevel = calculateLevel(user.points, user.activeReferrals, daysAtCurrentLevel)
-    let level = user.level as Level
+    // Nu mai facem auto level up/down - userul apasă butonul manual
+    // Verificăm doar dacă POATE face level up (toate condițiile îndeplinite)
+    const canLevelUp = getLevelUpBlockReason(
+      user.level as Level, 
+      user.points, 
+      user.activeReferrals, 
+      daysAtCurrentLevel
+    ) === null && user.level < 4
     
-    // Auto level up doar dacă userul NU a fost modificat recent de admin (în ultimele 5 minute)
-    // pentru a permite testarea cu zile setate manual
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
-    const recentlyUpdated = user.updatedAt > fiveMinutesAgo
-    
-    if (expectedLevel !== user.level && !recentlyUpdated) {
-      // Update level în DB și resetează contorul de zile
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { 
-          level: expectedLevel,
-          lastLevelUpDate: new Date(), // Resetez data level up
-        },
-      })
-      level = expectedLevel
-      
-      // Log level change
-      await prisma.history.create({
-        data: {
-          userId: user.id,
-          type: expectedLevel > user.level ? 'LEVEL_UP' : 'LEVEL_DOWN',
-          description: `Level ${user.level} → ${expectedLevel}`,
-          metadata: { oldLevel: user.level, newLevel: expectedLevel },
-        },
-      })
-    }
+    const level = user.level as Level
 
     // Calculează procente
     const basePercent = getBasePercent(level)
     const referralBonus = calculateReferralBonus(level, user.activeReferrals)
     const totalPercent = calculateTotalPercent(level, user.activeReferrals, patienceBonus)
 
-    // Verifică daily challenge - reset la 9:00 AM ora României (EET/EEST = UTC+2/UTC+3)
+    // Verifică daily challenge - reset la 9:00 AM ora României
+    // Folosim o logică simplă: comparăm datele locale
     const now = new Date()
     
-    // Calculează ora curentă în România (UTC+2 sau UTC+3 în funcție de DST)
-    const romaniaOffset = 2 * 60 * 60 * 1000 // UTC+2 (default)
-    const romaniaTime = new Date(now.getTime() + romaniaOffset)
+    // Creăm data curentă în timezone-ul Europe/Bucharest
+    const romaniaTimeString = now.toLocaleString('en-US', { 
+      timeZone: 'Europe/Bucharest',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false
+    })
+    const [datePart, timePart] = romaniaTimeString.split(', ')
+    const [month, day, year] = datePart.split('/')
+    const [hour, minute] = timePart.split(':')
+    const romaniaHour = parseInt(hour)
+    const romaniaDate = `${year}-${month}-${day}`
     
     // Calculează când e următorul reset (9:00 AM ora României)
-    const resetHour = 9 // 9 AM
-    let hoursUntilReset = resetHour - romaniaTime.getUTCHours()
+    const resetHour = 9
+    let hoursUntilReset = resetHour - romaniaHour
     if (hoursUntilReset <= 0) {
-      hoursUntilReset += 24 // Dacă e după 9 AM, așteaptă până mâine la 9 AM
+      hoursUntilReset += 24
     }
     
     // Verifică dacă challenge-ul de azi e disponibil (după 9 AM)
-    const isAfter9AM = romaniaTime.getUTCHours() >= resetHour
+    const isAfter9AM = romaniaHour >= resetHour
     
     // Account age check - 24h de la creare
     const accountAgeHours = Math.floor((Date.now() - user.createdAt.getTime()) / (1000 * 60 * 60))
@@ -119,21 +109,25 @@ export async function GET(req: NextRequest) {
       // Cont nou, așteaptă 24h
       hoursUntilNext = 24 - accountAgeHours
     } else if (!lastChallengeDate) {
-      // Niciodată nu a făcut challenge, poate face acum
+      // Niciodată nu a făcut challenge, poate face acum dacă e după 9 AM
       canDoChallenge = isAfter9AM
       hoursUntilNext = hoursUntilReset
     } else {
-      // Verifică dacă a făcut challenge azi (după 9 AM)
-      const lastChallengeRomania = new Date(lastChallengeDate.getTime() + romaniaOffset)
-      const today9AM = new Date(romaniaTime)
-      today9AM.setUTCHours(resetHour, 0, 0, 0)
+      // Verifică data ultimei provocări în timezone România
+      const lastChallengeRomaniaString = lastChallengeDate.toLocaleString('en-US', { 
+        timeZone: 'Europe/Bucharest',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+      })
+      const [lcMonth, lcDay, lcYear] = lastChallengeRomaniaString.split('/')
+      const lastChallengeRomaniaDate = `${lcYear}-${lcMonth}-${lcDay}`
       
-      if (lastChallengeRomania >= today9AM) {
-        // A făcut deja challenge azi, așteaptă până mâine 9 AM
+      // Verifică dacă a făcut challenge azi
+      if (lastChallengeRomaniaDate === romaniaDate) {
+        // A făcut deja challenge azi
         canDoChallenge = false
         hoursUntilNext = hoursUntilReset
       } else {
-        // Nu a făcut challenge azi
+        // Nu a făcut challenge azi - poate face dacă e după 9 AM
         canDoChallenge = isAfter9AM
         hoursUntilNext = isAfter9AM ? 0 : hoursUntilReset
       }
@@ -142,14 +136,16 @@ export async function GET(req: NextRequest) {
     // Progress către next level
     const nextLevel = Math.min(level + 1, 4) as Level
     const daysRequiredForNext = getDaysRequiredForLevel(nextLevel)
+    const blockReason = getLevelUpBlockReason(level, user.points, user.activeReferrals, daysAtCurrentLevel)
     const nextLevelData = nextLevel > level ? {
       level: nextLevel,
-      pointsNeeded: getPointsForLevel(nextLevel) - user.points,
-      referralsNeeded: getReferralsForLevel(nextLevel) - user.activeReferrals,
-      daysNeeded: daysRequiredForNext - daysAtCurrentLevel,
+      pointsNeeded: Math.max(0, getPointsForLevel(nextLevel) - user.points),
+      referralsNeeded: Math.max(0, getReferralsForLevel(nextLevel) - user.activeReferrals),
+      daysNeeded: Math.max(0, daysRequiredForNext - daysAtCurrentLevel),
       currentDays: daysAtCurrentLevel,
       requiredDays: daysRequiredForNext,
-      blockReason: getLevelUpBlockReason(level, user.points, user.activeReferrals, daysAtCurrentLevel),
+      blockReason,
+      canLevelUp, // Poate apăsa butonul de level up
     } : null
 
     // Requirements for current level (pentru afișare)

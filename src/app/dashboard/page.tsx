@@ -23,6 +23,7 @@ interface DashboardData {
       currentDays: number
       requiredDays: number
       blockReason: string | null
+      canLevelUp: boolean
     } | null
   }
   percent: {
@@ -67,6 +68,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
+  const [levelingUp, setLevelingUp] = useState(false)
+  const [levelUpMessage, setLevelUpMessage] = useState('')
   const router = useRouter()
   const { t, language } = useTranslation()
 
@@ -109,6 +112,34 @@ export default function Dashboard() {
       navigator.clipboard.writeText(data.referral.myId)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
+  const handleLevelUp = async () => {
+    const token = localStorage.getItem('token')
+    if (!token) return
+
+    setLevelingUp(true)
+    try {
+      const res = await fetch('/api/user/level-up', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      const result = await res.json()
+
+      if (res.ok) {
+        setLevelUpMessage(result.message)
+        // Refresh dashboard data
+        fetchDashboard(token)
+        setTimeout(() => setLevelUpMessage(''), 5000)
+      } else {
+        setError(result.reason || result.error || 'Cannot level up')
+      }
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setLevelingUp(false)
     }
   }
 
@@ -323,11 +354,32 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Success Message */}
-            {!data.points.nextLevelProgress.blockReason && data.profile.level < 4 && data.points.nextLevelProgress.pointsNeeded <= 0 && data.points.nextLevelProgress.referralsNeeded <= 0 && data.points.nextLevelProgress.daysNeeded <= 0 && (
-              <div className="mt-4 p-3 rounded-lg bg-green-500/20 border border-green-500/30">
-                <div className="text-sm text-green-400">
-                  ✓ All requirements met! Level up coming soon.
+            {/* Level Up Button */}
+            {data.points.nextLevelProgress.canLevelUp && (
+              <div className="mt-4 p-4 rounded-lg bg-gradient-to-r from-green-500/20 to-cyan-500/20 border border-green-500/50">
+                <div className="text-center">
+                  <div className="text-lg font-bold text-green-400 mb-2">
+                    🎉 All Requirements Met!
+                  </div>
+                  <div className="text-sm text-gray-300 mb-3">
+                    You can now upgrade to Level {data.points.nextLevelProgress.level}
+                  </div>
+                  <button
+                    onClick={handleLevelUp}
+                    disabled={levelingUp}
+                    className="px-8 py-3 rounded-xl bg-gradient-to-r from-green-500 to-cyan-500 hover:from-green-400 hover:to-cyan-400 disabled:opacity-50 text-black font-bold text-lg transition transform hover:scale-105"
+                  >
+                    {levelingUp ? 'Upgrading...' : `🚀 Level Up to LvL ${data.points.nextLevelProgress.level}!`}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Success Message after level up */}
+            {levelUpMessage && (
+              <div className="mt-4 p-4 rounded-lg bg-green-500/20 border border-green-500/30 animate-pulse">
+                <div className="text-center text-green-400 font-semibold">
+                  {levelUpMessage}
                 </div>
               </div>
             )}
